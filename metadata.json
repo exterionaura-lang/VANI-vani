@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Remix: Easy English - AI Tutor VANI",
+  "description": "An interactive English learning assistant featuring situational dialogues, dynamic conversations, and instant feedback with Coach VANI.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

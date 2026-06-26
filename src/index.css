@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Poppins:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-poppins: "Poppins", sans-serif;
+  --font-cormorant: "Cormorant Garamond", serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  background-color: #f7f9f6;
+  color: #1a231f;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+}
+
+/* Hide scrollbars but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom keyframes for live audio pulsing */
+@keyframes audioWave {
+  0%, 100% {
+    height: 6px;
+  }
+  50% {
+    height: 32px;
+  }
+}
+
+.animate-wave-1 {
+  animation: audioWave 1.2s ease-in-out infinite;
+}
+.animate-wave-2 {
+  animation: audioWave 0.9s ease-in-out infinite 0.2s;
+}
+.animate-wave-3 {
+  animation: audioWave 1.5s ease-in-out infinite 0.4s;
+}
+.animate-wave-4 {
+  animation: audioWave 1.1s ease-in-out infinite 0.1s;
+}
+.animate-wave-5 {
+  animation: audioWave 1.4s ease-in-out infinite 0.3s;
+}
+
+.feature-row {
+  font-size     : 13px;
+  color         : #B0B0B0;
+  font-family   : var(--font-poppins);
+  display       : flex;
+  align-items   : flex-start;
+  gap           : 8px;
+  line-height   : 1.4;
+}
+
+.feature-row.locked {
+  color         : #555555;
+}
+
+.feature-row.gold {
+  color         : #E8C97A;
+}
+
+.feature-row.purple {
+  color         : #C4B5FD;
+}
+
+.plan-card:active {
+  transform     : scale(0.98);
+}
+
+.plan-card.selected {
+  box-shadow    : 0 0 0 3px #FF8C4A;
+}
+
+/* 3D Card Flipping utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.25s ease-in-out infinite;
+}
+
