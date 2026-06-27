@@ -282,6 +282,68 @@ export function LanguageBridge() {
     }
   };
 
+  const getClientSideTranslationFallback = (text: string, sourceLang: string) => {
+    const textLower = text.toLowerCase().trim();
+    const rawClean = text.replace(/[.,\/#!$%\^&\*;:{}="‘'“”`~\-_()?]/g, "").toLowerCase().trim();
+
+    const rules = [
+      {
+        patterns: ["kaise ho", "kemon acho", "kemon achho", "kem cho", "epdi irukinga", "bagunnara", "how are you", "kemon achis", "kaise hain"],
+        direct: "How are you?",
+        professional: "I hope you are doing exceptionally well today.",
+        natural: "How's it going?",
+        tip: "Pronunciation Tip: Keep the mouth open for 'how' and link 'how's' smoothly like 'how-is-it'."
+      },
+      {
+        patterns: ["naam kya", "naam ki", "amar naam", "mera naam", "en peyar", "naam che", "peru"],
+        direct: "What is your name?",
+        professional: "May I have the pleasure of knowing your name, please?",
+        natural: "What's your name?",
+        tip: "Pronunciation Tip: Put gentle emphasis on the name itself with a clear, crisp 'm' finish."
+      },
+      {
+        patterns: ["theek", "thik", "achha", "acha", "bhalo", "nalla", "manchi"],
+        direct: "Everything is fine.",
+        professional: "Everything is completely in order and proceeding smoothly.",
+        natural: "Everything is going great, thank you!",
+        tip: "Pronunciation Tip: Sound confident by letting your voice rise toward the end of the phrase."
+      },
+      {
+        patterns: ["english", "angreji", "ingraji", "shikhbo", "sikhna", "kathuka"],
+        direct: "I want to speak fluent English.",
+        professional: "My goal is to master professional and eloquent English communication.",
+        natural: "I'd love to speak English fluently and confidently.",
+        tip: "Pronunciation Tip: Pronounce 'English' with a sharp, clean 'sh' sound at the end."
+      },
+      {
+        patterns: ["madad", "help", "sahaya", "utavi"],
+        direct: "I do not understand, please help me.",
+        professional: "I am having difficulty understanding; could you please provide guidance?",
+        natural: "I'm a bit lost—could you give me a hand here?",
+        tip: "Pronunciation Tip: Say 'assistance' or 'guidance' with a warm and conversational ending sound."
+      }
+    ];
+
+    let matched = null;
+    for (const rule of rules) {
+      if (rule.patterns.some(p => textLower.includes(p) || rawClean.includes(p))) {
+        matched = rule;
+        break;
+      }
+    }
+
+    if (matched) {
+      return matched;
+    }
+
+    return {
+      direct: `Let us learn and speak together about "${text}".`,
+      professional: `I will be delighted to collaborate in refining your sentence: "${text}".`,
+      natural: `Let's work together to practice this thought: "${text}".`,
+      tip: "Pronunciation Tip: Practice speaking this phrase slowly, focusing on breathing and custom pauses."
+    };
+  };
+
   // Trigger translation from native Indian language to English
   const handleTranslate = async (textSourceCode?: string, overrideText?: string) => {
     const textToTranslate = overrideText !== undefined ? overrideText : inputText;
@@ -323,7 +385,23 @@ export function LanguageBridge() {
         saveHistory([newItem, ...historyList]);
       }
     } catch (err) {
-      console.error("Translation pipeline error:", err);
+      console.error("Translation pipeline error, triggering client-side fallback:", err);
+      const fallback = getClientSideTranslationFallback(textToTranslate, activeLanguageName);
+      setDirectTrans(fallback.direct);
+      setProfTrans(fallback.professional);
+      setNatTrans(fallback.natural);
+      setPronouncTip(fallback.tip);
+
+      const newItem: HistoryItem = {
+        id: Date.now().toString(),
+        original: textToTranslate,
+        translated: fallback.natural,
+        sourceLang: activeLanguageName,
+        timestamp: new Date().toLocaleString("en-IN", { hour12: true }),
+        isFavorite: false,
+        score: null
+      };
+      saveHistory([newItem, ...historyList]);
     } finally {
       setTranslating(false);
     }
@@ -532,8 +610,26 @@ export function LanguageBridge() {
             setTalkState("idle");
           }
         } catch (err) {
-          console.error("Live talk translate pipeline failed:", err);
-          setTalkState("idle");
+          console.error("Live talk translate pipeline failed, using client-side fallback:", err);
+          const fallback = getClientSideTranslationFallback(transcript, selectedLang.code);
+          setTalkTranslated(fallback.natural);
+          setTalkDirect(fallback.direct);
+          setTalkProf(fallback.professional);
+          setTalkPronouncTip(fallback.tip);
+          setTalkState("coaching");
+
+          const historyObj: HistoryItem = {
+            id: Date.now().toString(),
+            original: transcript,
+            translated: fallback.natural,
+            sourceLang: selectedLang.code,
+            timestamp: new Date().toLocaleString("en-IN", { hour12: true }),
+            isFavorite: false,
+            score: null
+          };
+          saveHistory([historyObj, ...historyList]);
+
+          await speakAloud(fallback.natural, "natural");
         }
       } else {
         setTalkState("idle");

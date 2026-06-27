@@ -15,14 +15,73 @@ if (!apiKey) {
   console.log("[VANI CONFIG] Optional system API-key flag loaded.");
 }
 
-const ai = new GoogleGenAI({
+function decorateClient(client: GoogleGenAI): GoogleGenAI {
+  const originalGen = client.models.generateContent.bind(client.models);
+  client.models.generateContent = async function(options: any) {
+    let delay = 300;
+    const retries = 5;
+    let currentModel = options?.model || "gemini-3.5-flash";
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        const currentOptions = { ...options, model: currentModel };
+        return await originalGen(currentOptions);
+      } catch (err: any) {
+        const errStr = String(err.message || err).toUpperCase();
+
+        const isQuotaOrLimit = errStr.includes("QUOTA") || 
+                               errStr.includes("RESOURCE_EXHAUSTED") || 
+                               errStr.includes("LIMIT: 20") || 
+                               errStr.includes("EXCEEDED YOUR CURRENT QUOTA") ||
+                               errStr.includes("RATE-LIMIT") ||
+                               errStr.includes("RESOURCE EXHAUSTED") ||
+                               err.status === 429 ||
+                               err.code === 429;
+
+        if (isQuotaOrLimit) {
+          if (currentModel === "gemini-3.5-flash") {
+            currentModel = "gemini-3.1-flash-lite";
+            continue;
+          } else if (currentModel === "gemini-3.1-flash-lite") {
+            currentModel = "gemini-flash-latest";
+            continue;
+          }
+        }
+
+        const isTransient = errStr.includes("503") || 
+                            errStr.includes("UNAVAILABLE") || 
+                            errStr.includes("429") || 
+                            errStr.includes("RESOURCE_EXHAUSTED") || 
+                            errStr.includes("LIMIT") ||
+                            errStr.includes("HIGH DEMAND") ||
+                            errStr.includes("TEMPORARY") ||
+                            err.status === 503 || 
+                            err.code === 503 || 
+                            err.status === 429 ||
+                            err.code === 429;
+        if (isTransient && i < retries - 1) {
+          const jitter = Math.floor(Math.random() * 120) + 40;
+          const totalDelay = delay + jitter;
+          await new Promise(resolve => setTimeout(resolve, totalDelay));
+          delay *= 2;
+          continue;
+        }
+        throw err;
+      }
+    }
+    return await originalGen({ ...options, model: currentModel });
+  };
+  return client;
+}
+
+const ai = decorateClient(new GoogleGenAI({
   apiKey: apiKey || "MOCK_KEY_FALLBACK",
   httpOptions: {
     headers: {
       'User-Agent': 'aistudio-build',
     }
   }
-});
+}));
 
 function getAIClient(req: any): GoogleGenAI {
   const customKey = req?.headers?.["x-custom-api-key"] || req?.body?.["custom_api_key"];
@@ -35,64 +94,7 @@ function getAIClient(req: any): GoogleGenAI {
         }
       }
     });
-    
-    const originalGen = client.models.generateContent.bind(client.models);
-    client.models.generateContent = async function(options: any) {
-      let delay = 300;
-      const retries = 5;
-      let currentModel = options?.model || "gemini-3.5-flash";
-
-      for (let i = 0; i < retries; i++) {
-        try {
-          const currentOptions = { ...options, model: currentModel };
-          return await originalGen(currentOptions);
-        } catch (err: any) {
-          const errStr = String(err.message || err).toUpperCase();
-
-          const isQuotaOrLimit = errStr.includes("QUOTA") || 
-                                 errStr.includes("RESOURCE_EXHAUSTED") || 
-                                 errStr.includes("LIMIT: 20") || 
-                                 errStr.includes("EXCEEDED YOUR CURRENT QUOTA") ||
-                                 errStr.includes("RATE-LIMIT") ||
-                                 errStr.includes("RESOURCE EXHAUSTED") ||
-                                 err.status === 429 ||
-                                 err.code === 429;
-
-          if (isQuotaOrLimit) {
-            if (currentModel === "gemini-3.5-flash") {
-              currentModel = "gemini-3.1-flash-lite";
-              continue;
-            } else if (currentModel === "gemini-3.1-flash-lite") {
-              currentModel = "gemini-flash-latest";
-              continue;
-            }
-          }
-
-          const isTransient = errStr.includes("503") || 
-                              errStr.includes("UNAVAILABLE") || 
-                              errStr.includes("429") || 
-                              errStr.includes("RESOURCE_EXHAUSTED") || 
-                              errStr.includes("LIMIT") ||
-                              errStr.includes("HIGH DEMAND") ||
-                              errStr.includes("TEMPORARY") ||
-                              err.status === 503 || 
-                              err.code === 503 || 
-                              err.status === 429 ||
-                              err.code === 429;
-          if (isTransient && i < retries - 1) {
-            const jitter = Math.floor(Math.random() * 120) + 40;
-            const totalDelay = delay + jitter;
-            await new Promise(resolve => setTimeout(resolve, totalDelay));
-            delay *= 2;
-            continue;
-          }
-          throw err;
-        }
-      }
-      return await originalGen({ ...options, model: currentModel });
-    };
-    
-    return client;
+    return decorateClient(client);
   }
   return ai;
 }

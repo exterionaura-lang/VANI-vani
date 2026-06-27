@@ -892,14 +892,16 @@ export default function App() {
     return userPlan === "premium" ||
            userPlan === "promaster" ||
            userPlan === "pro" ||
-           userPlan === "monthly";
+           userPlan === "monthly" ||
+           (userPlan === "trial" && !trialExpired);
   }
 
   function canUseVoiceStation() {
     return userPlan === "premium" ||
            userPlan === "promaster" ||
            userPlan === "pro" ||
-           userPlan === "monthly";
+           userPlan === "monthly" ||
+           (userPlan === "trial" && !trialExpired);
   }
 
   function canSendMessage() {
