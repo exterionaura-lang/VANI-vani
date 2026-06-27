@@ -2797,7 +2797,7 @@ export default function App() {
                 <div className="feature-row" style={{ fontSize: "12px", color: "#FFF" }}>🔒 <strong>Speak with VANI Blocked:</strong> Live Voice calling station is locked in Trial.</div>
                 <div className="feature-row" style={{ fontSize: "12px", color: "#A0A0A0" }}>✅ Basic Pronunciation feedback during scenarios</div>
                 <div className="feature-row text-orange-400" style={{ fontSize: "12px" }}>💡 Auto-renews to your selected subscription plan on the 4th day unless cancelled.</div>
-                <div className="feature-row text-amber-300" style={{ fontSize: "11px" }}>💳 Auto-renew charges are transferred securely via automated UPI routing.</div>
+                <div className="feature-row text-amber-300" style={{ fontSize: "11px" }}>💳 Auto-renew charges are processed securely and automatically.</div>
               </div>
 
               <button 
@@ -3016,7 +3016,7 @@ export default function App() {
               <div style={{ fontSize: "12.5px" }} className="feature-row purple text-[#C4B5FD]">🔤 <strong>Unlocked Translation Portion:</strong> Language Bridge & Express translation unlocked!</div>
               <div style={{ fontSize: "12.5px" }} className="feature-row purple text-[#C4B5FD]">🎙️ <strong>Unlocked Speak with VANI:</strong> Dynamic real-time Voice calling & Coaching station!</div>
               <div style={{ fontSize: "12.5px" }} className="feature-row purple text-[#C4B5FD]">🔥 <strong>Best Value Discount:</strong> Pre-paid 6-Month fluency pass at ₹199/month (total ₹1,196 pre-paid).</div>
-              <div style={{ fontSize: "12.5px" }} className="feature-row purple text-[#C4B5FD]">💳 <strong>Direct Secure Route:</strong> Flat deduction from user account to developer bank account.</div>
+              <div style={{ fontSize: "12.5px" }} className="feature-row purple text-[#C4B5FD]">💳 <strong>Direct Secure Processing:</strong> Seamless deduction to activate your access.</div>
             </div>
 
             <button 
@@ -3713,109 +3713,18 @@ export default function App() {
           </div>
 
           <div className="p-6 space-y-5">
-            {/* Step 1: Automated VPA Collection Request Simulator */}
-            {!simulatingPush ? (
-              <div className="bg-slate-950/50 border border-slate-800/80 rounded-3xl p-4.5 space-y-3 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase font-black tracking-widest text-violet-400 block">
-                    ⚡ Option A: Instant Push Collection Request
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 leading-normal font-semibold">
-                  Enter your personal UPI ID. Our billing router will dispatch an instant secure payment request token directly to your UPI App.
+            {/* Direct secure checkout card (Removed Option A / Option B routing) */}
+            <div className="bg-slate-950/65 border border-slate-800 rounded-3xl p-5 space-y-3.5 text-center">
+              <div className="w-12 h-12 rounded-full bg-violet-500/10 text-violet-400 flex items-center justify-center mx-auto border border-violet-500/20">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-black tracking-widest text-violet-400 block">
+                  Secure Direct Payment Gateway
+                </span>
+                <p className="text-slate-300 text-xs font-semibold leading-relaxed px-2">
+                  We verify your transaction automatically via secure UPI tokens. Please complete the subscription authorization in your preferred payment app.
                 </p>
-                <div className="space-y-1.5 pt-1">
-                  <label className="text-[9px] uppercase font-black text-slate-500 block">Your Personal UPI ID (VPA)</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={userVpa}
-                      onChange={(e) => setUserVpa(e.target.value)}
-                      placeholder="e.g. name@okaxis, phone@paytm"
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-violet-500 placeholder:text-slate-700"
-                    />
-                    <button
-                      onClick={runAutomatedPushRequest}
-                      className="bg-violet-600 hover:bg-violet-500 text-white font-black text-[10px] uppercase px-3.5 py-2 rounded-xl transition duration-150 cursor-pointer shrink-0"
-                    >
-                      Request Push
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-slate-950/70 border border-violet-900/40 rounded-3xl p-5 text-center space-y-4">
-                <div className="flex justify-between items-center text-xs font-black uppercase text-violet-400">
-                  <span>Routing Secure Collect Request</span>
-                  <span className="text-white animate-pulse">{pushProgress}%</span>
-                </div>
-                
-                {/* Visual Progress Bar */}
-                <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-violet-500 to-emerald-400 h-full duration-500 transition-all rounded-full"
-                    style={{ width: `${pushProgress}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-center gap-2.5 text-[11px] text-slate-300 font-bold min-h-[32px] leading-relaxed bg-slate-900 p-3 rounded-2xl border border-slate-800">
-                  {pushProgress < 100 && (
-                    <div className="w-3.5 h-3.5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin shrink-0" />
-                  )}
-                  <span>{pushStage}</span>
-                </div>
-
-                {pushProgress < 100 && (
-                  <button
-                    onClick={() => {
-                      setSimulatingPush(false);
-                      setPushProgress(0);
-                    }}
-                    className="text-[9.5px] uppercase font-black text-slate-500 hover:text-slate-300 transition block mx-auto"
-                  >
-                    ← Edit UPI ID
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Step 2: Quick Direct App Launch on Mobile */}
-            <div className="space-y-2.5 text-left">
-              <span className="text-[10px] uppercase font-black tracking-widest text-slate-400 block">
-                📱 Option B: Open Instantly via Mobile App
-              </span>
-              <p className="text-[10px] text-slate-400 leading-normal font-semibold">
-                If you are on mobile, select your UPI app to complete the transaction securely. (Our developer's merchant credentials are securely bound within the encrypted deep-link payload).
-              </p>
-              <div className="grid grid-cols-2 gap-2 pt-1.5">
-                <a 
-                  href={upiLink}
-                  onClick={() => playTTS("Opening Google Pay secure channel.", 5)}
-                  className="p-3 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-2xl text-center font-bold text-xs flex items-center justify-center gap-2 duration-150 cursor-pointer text-white no-underline"
-                >
-                  <span className="text-emerald-400">🟢</span> Google Pay
-                </a>
-                <a 
-                  href={upiLink}
-                  onClick={() => playTTS("Opening Phone Pay secure channel.", 5)}
-                  className="p-3 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-2xl text-center font-bold text-xs flex items-center justify-center gap-2 duration-150 cursor-pointer text-white no-underline"
-                >
-                  <span className="text-purple-400">🟣</span> PhonePe
-                </a>
-                <a 
-                  href={upiLink}
-                  onClick={() => playTTS("Opening Paytm secure channel.", 5)}
-                  className="p-3 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-2xl text-center font-bold text-xs flex items-center justify-center gap-2 duration-150 cursor-pointer text-white no-underline"
-                >
-                  <span className="text-sky-400">🔵</span> Paytm
-                </a>
-                <a 
-                  href={upiLink}
-                  onClick={() => playTTS("Opening general UPI app.", 5)}
-                  className="p-3 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 rounded-2xl text-center font-bold text-xs flex items-center justify-center gap-2 duration-150 cursor-pointer text-white no-underline"
-                >
-                  <span className="text-amber-400">🟠</span> Any UPI App
-                </a>
               </div>
             </div>
 
@@ -5797,55 +5706,18 @@ export default function App() {
                   </p>
                 </div>
 
-                {/* Method selector */}
-                <div className="bg-white p-4.5 rounded-3xl border border-stone-150 shadow-xxs space-y-4">
-                  <span className="text-[10px] uppercase font-black tracking-widest text-stone-500 block">
-                    Choose Your Favorite UPI Mobile App
-                  </span>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      { id: "gpay", label: "Google Pay", color: "border-blue-200 text-blue-700 bg-blue-50/20", icon: "🟢" },
-                      { id: "phonepe", label: "PhonePe", color: "border-purple-200 text-purple-700 bg-purple-50/20", icon: "🟣" },
-                      { id: "paytm", label: "Paytm APP", color: "border-sky-205 border-sky-200 text-sky-700 bg-sky-50/20", icon: "🔵" },
-                      { id: "bhim", label: "BHIM / Other", color: "border-emerald-200 text-emerald-700 bg-emerald-50/20", icon: "🟠" }
-                    ].map((app) => {
-                      const isSel = selectedUPIApp === app.id;
-                      return (
-                        <button
-                           key={app.id}
-                           onClick={() => {
-                             setSelectedUPIApp(app.id);
-                             setCustomVPA("");
-                           }}
-                           className={`p-3 rounded-2xl border text-left transition flex items-center gap-2.5 ${
-                             isSel 
-                               ? "border-indigo-650 border-indigo-500 ring-2 ring-indigo-100 bg-white shadow-xs font-black" 
-                               : "bg-stone-50 hover:bg-stone-100 border-stone-200 text-stone-700"
-                           }`}
-                        >
-                          <span className="text-base">{app.icon}</span>
-                          <span className="text-xs">{app.label}</span>
-                        </button>
-                      );
-                    })}
+                {/* Simplified Safe Payment Card (Removed payment routing selectors & inputs) */}
+                <div className="bg-white p-5 rounded-3xl border border-stone-150 shadow-xxs space-y-3 text-center">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                    <Check className="w-5 h-5" />
                   </div>
-
-                  {/* Manual UPI VPA entry */}
-                  <div className="space-y-1.5 pt-2 border-t border-stone-100">
-                    <label className="text-[9px] uppercase font-black tracking-widest text-stone-500 block">
-                      Or entering manual UPI Address / VPA ID
-                    </label>
-                    <input 
-                      type="text"
-                      value={customVPA}
-                      onChange={(e) => {
-                        setCustomVPA(e.target.value);
-                        setSelectedUPIApp("custom");
-                      }}
-                      placeholder="e.g. Priyanshu@oksbi, anya@ybl"
-                      className="w-full bg-stone-50 border border-stone-200 focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 rounded-xl px-3.5 py-2 text-xs font-bold text-stone-800 transition focus:outline-none placeholder:text-stone-400"
-                    />
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-black tracking-widest text-emerald-600 block">
+                      🔒 Secured Instant Billing
+                    </span>
+                    <p className="text-stone-600 text-xs font-semibold leading-relaxed px-2">
+                      Your premium access is protected by standard end-to-end security. Tap the checkout button below to finalize your VIP profile.
+                    </p>
                   </div>
                 </div>
 
