@@ -364,13 +364,18 @@ export function LanguageBridge() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: textToTranslate, sourceLanguage: activeLanguageName })
       });
+      
+      if (!response.ok) {
+        throw new Error(`Server returned status code: ${response.status}`);
+      }
+
       const data = await response.json();
       
-      if (data) {
-        setDirectTrans(data.direct || "");
-        setProfTrans(data.professional || "");
-        setNatTrans(data.natural || "");
-        setPronouncTip(data.pronunciationTip || "");
+      if (data && (data.direct || data.natural)) {
+        setDirectTrans(data.direct || data.natural || "");
+        setProfTrans(data.professional || data.natural || "");
+        setNatTrans(data.natural || data.direct || "");
+        setPronouncTip(data.pronunciationTip || data.tip || "");
 
         // Save entry silently inside localStorage database history
         const newItem: HistoryItem = {
@@ -383,6 +388,8 @@ export function LanguageBridge() {
           score: null
         };
         saveHistory([newItem, ...historyList]);
+      } else {
+        throw new Error("Translation data is empty or malformed.");
       }
     } catch (err) {
       console.error("Translation pipeline error, triggering client-side fallback:", err);
@@ -407,40 +414,7 @@ export function LanguageBridge() {
     }
   };
 
-  // Setup main Native Voice Input listener
-  useEffect(() => {
-    const SpeechRecObj = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecObj) {
-      const recognition = new SpeechRecObj();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = selectedLang.locale;
-
-      recognition.onstart = () => {
-        setIsTranslatorListening(true);
-      };
-
-      recognition.onresult = (e: any) => {
-        const transcript = e.results[0][0].transcript;
-        if (transcript) {
-          setInputText(transcript);
-          handleTranslate(selectedLang.code, transcript);
-        }
-        setIsTranslatorListening(false);
-      };
-
-      recognition.onerror = (err: any) => {
-        console.error("Recognition crash:", err);
-        setIsTranslatorListening(false);
-      };
-
-      recognition.onend = () => {
-        setIsTranslatorListening(false);
-      };
-
-      recognitionRef.current = recognition;
-    }
-  }, [selectedLang]);
+  // Setup main Native Voice Input listener (now handled dynamically in toggleTranslatorVoice)
 
   // Setup Pronunciation Coach Speech Recognition listener
   const startCoachVoiceRecognition = (expectedSentence: string) => {
@@ -531,22 +505,54 @@ export function LanguageBridge() {
     rec.start();
   };
 
-  // Toggle voice recognition for text translator native language
+  // Toggle voice recognition for text translator native language dynamically
   const toggleTranslatorVoice = () => {
-    if (!recognitionRef.current) {
-      alert("Standard browser mic setup is unavailable. Please click option parameters.");
+    const SpeechRecObj = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecObj) {
+      alert("Voice translation is unsupported in this browser.");
       return;
     }
+
     if (isTranslatorListening) {
-      recognitionRef.current.stop();
-    } else {
-      setSelectedLang(selectedLang); // trigger binding
-      recognitionRef.current.lang = selectedLang.locale;
-      try {
-        recognitionRef.current.start();
-      } catch (err) {
-        console.warn("Recognition already active:", err);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
+      setIsTranslatorListening(false);
+      return;
+    }
+
+    const rec = new SpeechRecObj();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = selectedLang.locale;
+
+    rec.onstart = () => {
+      setIsTranslatorListening(true);
+    };
+
+    rec.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      if (transcript) {
+        setInputText(transcript);
+        handleTranslate(selectedLang.code, transcript);
+      }
+      setIsTranslatorListening(false);
+    };
+
+    rec.onerror = (err: any) => {
+      console.error("Recognition crash:", err);
+      setIsTranslatorListening(false);
+    };
+
+    rec.onend = () => {
+      setIsTranslatorListening(false);
+    };
+
+    recognitionRef.current = rec;
+    try {
+      rec.start();
+    } catch (err) {
+      console.warn("Recognition already active:", err);
     }
   };
 
@@ -583,20 +589,25 @@ export function LanguageBridge() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: transcript, sourceLanguage: selectedLang.code })
           });
+          
+          if (!res.ok) {
+            throw new Error(`Server returned HTTP status ${res.status}`);
+          }
+
           const transResult = await res.json();
           
-          if (transResult && transResult.natural) {
-            setTalkTranslated(transResult.natural);
-            setTalkDirect(transResult.direct || "");
-            setTalkProf(transResult.professional || "");
-            setTalkPronouncTip(transResult.pronunciationTip || "");
+          if (transResult && (transResult.natural || transResult.direct)) {
+            setTalkTranslated(transResult.natural || transResult.direct || "");
+            setTalkDirect(transResult.direct || transResult.natural || "");
+            setTalkProf(transResult.professional || transResult.natural || "");
+            setTalkPronouncTip(transResult.pronunciationTip || transResult.tip || "");
             setTalkState("coaching");
 
             // Save translation entry elegantly inside database history
             const historyObj: HistoryItem = {
               id: Date.now().toString(),
               original: transcript,
-              translated: transResult.natural,
+              translated: transResult.natural || transResult.direct || "",
               sourceLang: selectedLang.code,
               timestamp: new Date().toLocaleString("en-IN", { hour12: true }),
               isFavorite: false,
@@ -605,9 +616,9 @@ export function LanguageBridge() {
             saveHistory([historyObj, ...historyList]);
 
             // Auto speak translated response using Gemini premium TTS or Web Synth
-            await speakAloud(transResult.natural, "natural");
+            await speakAloud(transResult.natural || transResult.direct || "", "natural");
           } else {
-            setTalkState("idle");
+            throw new Error("Translation data is empty or malformed");
           }
         } catch (err) {
           console.error("Live talk translate pipeline failed, using client-side fallback:", err);
@@ -1210,7 +1221,7 @@ export function LanguageBridge() {
                   <div className="space-y-2 py-6 text-center flex flex-col items-center justify-center">
                     <RefreshCw className="w-8 h-8 text-[#BD53F4] animate-spin mb-1" />
                     <p className="text-xs font-bold text-zinc-800">Translating native speech instantly...</p>
-                    <p className="text-[10.5px] text-[#7C3AED] font-semibold uppercase tracking-widest mt-1">Connecting Google Gemini 3.5</p>
+                    <p className="text-[10.5px] text-[#7C3AED] font-semibold uppercase tracking-widest mt-1">Connecting VANI Translation AI</p>
                   </div>
                 )}
 
@@ -1456,13 +1467,6 @@ export function LanguageBridge() {
         )}
 
       </main>
-
-      {/* Accessibility footer parameters */}
-      <footer className="relative z-10 py-4.5 px-4 bg-black/60 border-t border-[#151515] text-center shrink-0">
-        <p className="text-[9.5px] text-gray-500 font-black uppercase tracking-wider flex items-center justify-center gap-1">
-          <Smartphone className="w-3.5 h-3.5 text-[#BD53F4]" /> Language Bridge Center is WCAG compliant • Powered by Google Gemini 3.5
-        </p>
-      </footer>
 
     </div>
   );

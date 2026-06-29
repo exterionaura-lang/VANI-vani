@@ -470,7 +470,38 @@ function generateLocalCoachFallback(messages: any[], topicTitle: string, userLev
   };
 }
 
-function generateLocalTranslationFallback(text: string, sourceLanguage: string) {
+async function fetchMyMemoryTranslation(text: string, sourceLanguage: string): Promise<string | null> {
+  try {
+    const langMap: { [key: string]: string } = {
+      bengali: "bn",
+      hindi: "hi",
+      tamil: "ta",
+      telugu: "te",
+      marathi: "mr",
+      urdu: "ur",
+      gujarati: "gu",
+      kannada: "kn",
+      malayalam: "ml",
+      punjabi: "pa",
+      odia: "or",
+      assamese: "as"
+    };
+    const src = langMap[sourceLanguage.toLowerCase()] || "auto";
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${src}|en`;
+    const res = await fetch(url);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.responseData && data.responseData.translatedText) {
+        return data.responseData.translatedText;
+      }
+    }
+  } catch (err) {
+    console.warn("MyMemory translation failed:", err);
+  }
+  return null;
+}
+
+async function generateLocalTranslationFallback(text: string, sourceLanguage: string) {
   const textLower = text.toLowerCase().trim();
   const rawClean = text.replace(/[.,\/#!$%\^&\*;:{}="‘'“”`~\-_()?]/g, "").toLowerCase().trim();
 
@@ -542,7 +573,7 @@ function generateLocalTranslationFallback(text: string, sourceLanguage: string) 
     },
     {
       patterns: [
-        "madad", "help", "sahaya", "utavi", "bujhte", "samajh", "সহায়তা", "मदद", "ಸಹಾಯ", "உদவி"
+        "madad", "help", "sahaya", "utavi", "bujhte", "samajh", "সহায়তা", "मदद", "ಸহಾಯ", "உদவி"
       ],
       direct: "I do not understand, please help me.",
       professional: "I am having difficulty understanding; could you please provide guidance?",
@@ -580,31 +611,40 @@ function generateLocalTranslationFallback(text: string, sourceLanguage: string) 
     natural = matchedRule.natural;
     tip = matchedRule.tip;
   } else {
-    // Dynamic generation when we don't have a rigid match, to be much better than a fixed generic fallback
-    const hasFriendWord = ["bhai", "yaar", "dost", "friend"].some(w => textLower.includes(w));
-    const hasTimeWord = ["kal", "tomorrow", "today", "aaj", "time", "samay", "wakt"].some(w => textLower.includes(w));
-    const hasTravelWord = ["go", "travel", "jao", "gaya", "khoj", "hotel", "flight", "train"].some(w => textLower.includes(w));
-
-    if (hasFriendWord) {
-      direct = "Talking to a friend is good.";
-      professional = "Maintaining consistent professional and friendly dialogues is beneficial.";
-      natural = "It's always nice to have a chat with a close friend.";
-      tip = "Pronunciation Tip: Keep the 'f' in 'friend' light and airy.";
-    } else if (hasTimeWord) {
-      direct = "Time is very important.";
-      professional = "Punctuality and schedule management are crucial for success.";
-      natural = "Let's make sure we set aside some time for this.";
-      tip = "Pronunciation Tip: Ensure 'schedule' is pronounced cleanly (SKE-dule).";
-    } else if (hasTravelWord) {
-      direct = "I want to travel around.";
-      professional = "I look forward to finalizing my upcoming travel arrangements.";
-      natural = "I'm planning to head out and travel soon.";
-      tip = "Pronunciation Tip: Keep 'arrangements' smooth (uh-RANGE-ments).";
+    // Try to translate using free MyMemory API
+    const myMemoryTranslated = await fetchMyMemoryTranslation(text, sourceLanguage);
+    if (myMemoryTranslated && !myMemoryTranslated.toLowerCase().includes("mymemory")) {
+      direct = myMemoryTranslated;
+      natural = myMemoryTranslated;
+      professional = `I would like to state that: "${myMemoryTranslated}"`;
+      tip = "Pronunciation Tip: Speak fluently and focus on natural cadence and pacing.";
     } else {
-      direct = `Let us learn and speak together about "${text}".`;
-      professional = `I will be delighted to collaborate in refining your sentence: "${text}".`;
-      natural = `Let's work together to practice this thought: "${text}".`;
-      tip = "Pronunciation Tip: Practice speaking this phrase slowly, focusing on breathing and custom pauses.";
+      // Dynamic generation when we don't have a rigid match, to be much better than a fixed generic fallback
+      const hasFriendWord = ["bhai", "yaar", "dost", "friend"].some(w => textLower.includes(w));
+      const hasTimeWord = ["kal", "tomorrow", "today", "aaj", "time", "samay", "wakt"].some(w => textLower.includes(w));
+      const hasTravelWord = ["go", "travel", "jao", "gaya", "khoj", "hotel", "flight", "train"].some(w => textLower.includes(w));
+
+      if (hasFriendWord) {
+        direct = "Talking to a friend is good.";
+        professional = "Maintaining consistent professional and friendly dialogues is beneficial.";
+        natural = "It's always nice to have a chat with a close friend.";
+        tip = "Pronunciation Tip: Keep the 'f' in 'friend' light and airy.";
+      } else if (hasTimeWord) {
+        direct = "Time is very important.";
+        professional = "Punctuality and schedule management are crucial for success.";
+        natural = "Let's make sure we set aside some time for this.";
+        tip = "Pronunciation Tip: Ensure 'schedule' is pronounced cleanly (SKE-dule).";
+      } else if (hasTravelWord) {
+        direct = "I want to travel around.";
+        professional = "I look forward to finalizing my upcoming travel arrangements.";
+        natural = "I'm planning to head out and travel soon.";
+        tip = "Pronunciation Tip: Keep 'arrangements' smooth (uh-RANGE-ments).";
+      } else {
+        direct = `Let us learn and speak together about "${text}".`;
+        professional = `I will be delighted to collaborate in refining your sentence: "${text}".`;
+        natural = `Let's work together to practice this thought: "${text}".`;
+        tip = "Pronunciation Tip: Practice speaking this phrase slowly, focusing on breathing and custom pauses.";
+      }
     }
   }
 
@@ -975,7 +1015,7 @@ You MUST respond in JSON format matching this schema:
     console.log("[VANI AI STATUS] Bridge translation synchronized.");
     // Leverage our premium offline heuristic translation pipeline for high-quality fallback
     const sourceLanguage = req.body.sourceLanguage || "Bengali";
-    const fallbackTranslation = generateLocalTranslationFallback(req.body.text || "", sourceLanguage);
+    const fallbackTranslation = await generateLocalTranslationFallback(req.body.text || "", sourceLanguage);
     res.json(fallbackTranslation);
   }
 });
